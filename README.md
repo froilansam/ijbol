@@ -31,16 +31,20 @@ answers one question, and each rule is written down in only one skill.
 
 ```mermaid
 flowchart LR
-    req([Your request]) --> ijbol{{"🎼 ijbol<br/>conductor"}}
-    ijbol --> lean["✂️ ijbol-lean<br/>How small?"]
-    ijbol --> clean["🧹 ijbol-clean<br/>Where does it fit?"]
+    hook[["⚡ session hook<br/>injects the IJBOL core once"]] --> core{{"IJBOL core<br/>✂️ lean rules + routing"}}
+    req([Your request]) --> core
+    core -- "self-contained task" --> ship(["write it, test it, done<br/>no extra skill calls"])
+    core -- "multi-file or risky" --> ijbol["🎼 ijbol<br/>full workflow"]
+    core -- "existing codebase" --> clean["🧹 ijbol-clean<br/>Where does it fit?"]
     clean -.-> prof[("profiles/*.md<br/>local, gitignored")]
-    ijbol -- visible change --> ux["🧭 ijbol-ux<br/>Works for the user?"]
+    core -- "visible change" --> ux["🧭 ijbol-ux<br/>Works for the user?"]
     ux --> visual["🎨 ijbol-visual<br/>Looks right?"]
-    ux -.-> opt["arrange · polish · delight<br/>optional, if installed"]
-    rev["🔍 ijbol-review<br/>Ready to ship?"] -. standards .-> lean
-    rev -. standards .-> clean
+    core -- "review asked" --> rev["🔍 ijbol-review<br/>Ready to ship?"]
 ```
+
+The core rules ([`hooks/core.md`](hooks/core.md), about 430 words) are
+always on. The specialists load only when a task needs them, so a small task
+costs no extra tool calls.
 
 Every change goes through the same four steps:
 
@@ -53,6 +57,15 @@ flowchart LR
 
 ## Install
 
+**As a plugin (recommended).** Its session hook turns IJBOL on for every
+session automatically. This is the setup the benchmark measures. Skill names
+get a prefix, e.g. `/ijbol:ijbol-review`:
+
+```
+/plugin marketplace add froilansam/ijbol
+/plugin install ijbol@ijbol
+```
+
 **As personal skills.** You type the names without a prefix (`/ijbol`,
 `/ijbol-review`, and so on), and edits in this repo apply right away. Any
 skill with the same name, and any skill with one of the old names, is moved to
@@ -62,24 +75,15 @@ skill with the same name, and any skill with one of the old names, is moved to
 git clone https://github.com/froilansam/ijbol && cd ijbol && ./install.sh
 ```
 
-**As a plugin.** This version is shareable and versioned, but the skill names
-get a prefix, e.g. `/ijbol:ijbol`:
+Personal skills get no session hook. To turn the core on anyway, import it
+into `~/.claude/CLAUDE.md` with one line (use your clone's path):
 
 ```
-/plugin marketplace add froilansam/ijbol
-/plugin install ijbol@ijbol
+@~/ijbol/hooks/core.md
 ```
 
 Use one install method or the other. If you install both, every skill loads
 twice.
-
-**Then add one line to `~/.claude/CLAUDE.md`.** Skills only load when Claude
-decides they apply. This line makes sure `ijbol` loads on every code change,
-and the benchmark below uses the same line:
-
-```
-Before any code change, load the ijbol skill with the Skill tool.
-```
 
 ## Project profiles
 
@@ -93,38 +97,43 @@ profile before editing, and its rules beat the generic ones.
 ## Benchmark
 
 Each cell below is a real headless Claude Code session on Opus 5.5: 9 tasks,
-2 runs per task, 3 arms, scored by hidden correctness and safety checks. It
-runs on [ponytail's harness](#built-on-ponytail). The full method,
-per-task numbers and limits are in [benchmarks/](benchmarks/README.md).
+scored by hidden correctness and safety checks. It runs on
+[ponytail's harness](#built-on-ponytail), with ponytail and IJBOL run side by
+side, 3 runs each. The full method, per-task numbers and limits are in
+[benchmarks/](benchmarks/README.md).
 
-| vs no skill | source LOC | output tokens | total tokens | cost | time | pass | wrote tests |
-|---|--:|--:|--:|--:|--:|--:|--:|
-| ponytail | **−66%** | **−42%** | −0% | **−17%** | **−36%** | 89% | 56% |
-| **IJBOL** | **−68%** | **−29%** | +58% | +24% | **−18%** | 89% | **67%** |
-| no skill | | | | | | 89% | 56% |
+| vs no skill | source LOC | output tokens | total tokens | cost | time | pass |
+|---|--:|--:|--:|--:|--:|--:|
+| no skill | | | | | | 89% |
+| ponytail | **−67%** | **−42%** | −1% | **−17%** | **−37%** | 93% |
+| **IJBOL** | **−62%** | **−39%** | +4% | **−12%** | **−34%** | **96%** |
 
 ```mermaid
 xychart-beta
-    title "Source lines of code (9 tasks, lower is better)"
+    title "Hidden checks passed, % (higher is better)"
     x-axis ["no skill", "ponytail", "IJBOL"]
-    y-axis "lines" 0 --> 800
-    bar [721, 248, 234]
+    y-axis "%" 80 --> 100
+    bar [89, 93, 96]
 ```
 
 ```mermaid
 xychart-beta
-    title "Cost in USD (9 tasks, lower is better)"
+    title "Cost in USD, 9 tasks (lower is better)"
     x-axis ["no skill", "ponytail", "IJBOL"]
-    y-axis "USD" 0 --> 1.6
-    bar [1.17, 0.98, 1.46]
+    y-axis "USD" 0 --> 1.3
+    bar [1.17, 0.97, 1.04]
 ```
 
-**The honest read:** IJBOL writes the least code and the most tests, at
-the same pass rate as the other arms. It also costs more tokens than no
-skill. Each specialist loads with its own tool call, and every extra turn
-re-reads the whole context. If token cost matters most to you, ponytail
-alone is cheaper. IJBOL pays extra for placement, naming, UX and review
-discipline that this benchmark does not measure.
+**The honest read:**
+
+- IJBOL passed more hidden checks than any other arm.
+- Compared with no skill, it is cheaper, faster, and writes far less code.
+- Ponytail is still a few points leaner on cost and tokens. At this sample
+  size, a gap that small is close to noise.
+- IJBOL v1 loaded every skill with its own tool call. That doubled the turns
+  and cost 24% *more* than no skill. v3 injects the core once through a hook,
+  and the [benchmark notes](benchmarks/README.md#how-we-got-here-v1--v3)
+  show how the numbers changed.
 
 ## Renamed from
 

@@ -1,6 +1,6 @@
 {
   "name": "ijbol",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "IJBOL - It Just Builds, Obviously Lean. ijbol conducts ijbol-lean (smallest change), ijbol-clean (placement, types, conventions), ijbol-ux and ijbol-visual (UX and visual design), and ijbol-review (code review).",
   "author": {
     "name": "Froilan Malibiran"

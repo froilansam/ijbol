@@ -42,10 +42,13 @@ Load each with the **Skill tool**, one call per skill, by the name the skill
 list shows (`ijbol-lean`, or `ijbol:ijbol-lean` when installed as a
 plugin). Load once per session; do not reload on every edit.
 
-Always, before writing code:
+Before writing code:
 
-1. `ijbol-lean`
-2. `ijbol-clean` (it tells you whether a project profile applies)
+1. `ijbol-lean`, unless "IJBOL mode" is already in your context (the plugin's
+   session hook injects it; then the lean rules are loaded, skip this call).
+2. `ijbol-clean` when changing an existing codebase where placement,
+   component boundaries, types or naming matter (it also tells you whether a
+   project profile applies). A self-contained function or script skips it.
 
 Only when the change is visible to the user:
 
