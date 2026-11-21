@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "ijbol",
+  "description": "IJBOL - It Just Builds, Obviously Lean. Skill pack for Claude Code.",
+  "owner": {
+    "name": "Froilan Malibiran"
+  },
+  "plugins": [
+    {
+      "name": "ijbol",
+      "description": "IJBOL: ijbol, ijbol-lean, ijbol-clean, ijbol-ux, ijbol-visual, ijbol-review",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}
